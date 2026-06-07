@@ -10,5 +10,5 @@ App(
     fap_author="zacharesmer",
     fap_icon="appicon.png",
     fap_description="Talk to your Tamagotchi Connection (2024) with the tamagometer website and your Flipper",
-    fap_weburl="https://github.com/zacharesmer/tamagometer",
+    fap_weburl="https://github.com/zacharesmer/tamagomete",
 )
