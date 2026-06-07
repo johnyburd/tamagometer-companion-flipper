@@ -16,12 +16,28 @@ jobs:
         with:
           # Set to 'release' to build for latest published release version
           sdk-channel: rc
-      - name: Create Release
+      - name: Check for existing release
+        id: check-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}-${{ steps.build-app.outputs.suffix }}
         run: |
-          gh release create "$tag" \
+          # Extract fap_version from application.fam
+          FAP_VERSION=$(grep -oP 'fap_version\s*=\s*"\K[^"]+' application.fam)
+          TAG="v${FAP_VERSION}-${{ steps.build-app.outputs.suffix }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if gh release view "$TAG" --repo="${{ github.repository }}" &>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release $TAG already exists — skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Release $TAG does not exist yet — will create."
+          fi
+      - name: Create Release
+        if: steps.check-release.outputs.exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.check-release.outputs.tag }}" \
             --repo="${{ github.repository }}" \
-            --title="${{ github.event.repository.name }} ${{ steps.build-app.outputs.suffix }}" \
+            --title="${{ github.event.repository.name }} ${{ steps.check-release.outputs.tag }}" \
             ${{ steps.build-app.outputs.fap-artifacts }}
