@@ -1,15 +1,12 @@
-name: "FAP: Build"
+name: "FAP: Build and Release"
 on:
   push:
     branches:
       - main
-  schedule:
-    # do a build every day
-    - cron: "1 1 * * *"
 jobs:
   ufbt-build-action:
     runs-on: ubuntu-latest
-    name: "ufbt: Build for release candidate branch"
+    name: "ufbt: Build and publish release"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,8 +16,12 @@ jobs:
         with:
           # Set to 'release' to build for latest published release version
           sdk-channel: rc
-      - name: Upload app artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ github.event.repository.name }}-${{ steps.build-app.outputs.suffix }}
-          path: ${{ steps.build-app.outputs.fap-artifacts }}
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}-${{ steps.build-app.outputs.suffix }}
+        run: |
+          gh release create "$tag" \
+            --repo="${{ github.repository }}" \
+            --title="${{ github.event.repository.name }} ${{ steps.build-app.outputs.suffix }}" \
+            ${{ steps.build-app.outputs.fap-artifacts }}
